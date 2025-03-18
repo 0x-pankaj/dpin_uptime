@@ -1,14 +1,5 @@
 // import Appbar from "@/components/Appbar";
-import {
-  Activity,
-  Bell,
-  Shield,
-  Clock,
-  Server,
-  Users,
-  ArrowRight,
-  Check,
-} from "lucide-react";
+import { Activity, Bell, Shield, Clock, ArrowRight, Check } from "lucide-react";
 
 export default function Home() {
   return (
