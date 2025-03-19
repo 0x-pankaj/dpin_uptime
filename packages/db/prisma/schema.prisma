@@ -20,11 +20,12 @@ model User {
 }
 
 model Website {
-  id     String         @id @default(uuid())
-  url    String
-  userId String
+  id       String         @id @default(uuid())
+  url      String
+  userId   String
   // user          User            @relation(fields: [userId], references: [id])
-  ticks  websiteTicks[]
+  ticks    websiteTicks[]
+  disabled Boolean        @default(false)
 }
 
 model Validator {
