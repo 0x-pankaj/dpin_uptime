@@ -8,9 +8,10 @@ import { API_BACKEND_URL } from "@/config";
 import { useAuth } from "@clerk/nextjs";
 
 function StatusDot({ status }: { status: string }) {
+  console.log("status: ", status);
   return (
     <div
-      className={`w-3 h-3 rounded-full ${status === "up" ? "bg-green-500" : "bg-red-500"}`}
+      className={`w-3 h-3 rounded-full ${status === "up" ? "bg-green-500" : status === "down" ? "bg-red-500" : "bg-gray-500"}`}
     />
   );
 }
@@ -18,29 +19,34 @@ function StatusDot({ status }: { status: string }) {
 function UptimeHistory({
   ticks,
 }: {
-  ticks?: { status: string; createdAt: string }[];
+  ticks?: { status: string; createAt: string }[];
 }) {
-  // Group ticks into 3-minute windows
+  // Group ticks into 30-minute windows
   const aggregatedTicks = useMemo(() => {
-    if (!ticks) return Array(10).fill(false);
+    if (!ticks) return Array(10).fill("unknown");
     const now = new Date();
-    const windows: boolean[] = [];
+    const windows: string[] = [];
 
-    // Create 10 windows of 3 minutes each
+    // Create 10 windows of 30 minutes each
     for (let i = 0; i < 10; i++) {
-      const windowEnd = subMinutes(now, i * 3);
-      const windowStart = subMinutes(windowEnd, 3);
+      const windowEnd = subMinutes(now, i * 30);
+      const windowStart = subMinutes(windowEnd, 30);
 
-      const windowTicks = ticks.filter((tick) => {
-        const tickDate = parseISO(tick.createdAt);
+      const windowTicks = (ticks ?? []).filter((tick) => {
+        console.log("ticks: ", tick)
+        const tickDate = parseISO(tick.createAt);
         return tickDate >= windowStart && tickDate < windowEnd;
       });
 
-      // Consider window up if all ticks are up
-      const isUp =
-        windowTicks.length > 0 &&
-        windowTicks.every((tick) => tick.status === "up");
-      windows.unshift(isUp);
+      // If no ticks in window, mark as unknown
+      if (windowTicks.length === 0) {
+        windows.unshift("unknown");
+        continue;
+      }
+
+      // Get the status based on actual tick statuses
+      const hasDownStatus = windowTicks.some((tick) => tick.status === "down");
+      windows.unshift(hasDownStatus ? "down" : "up");
     }
 
     return windows;
@@ -48,11 +54,17 @@ function UptimeHistory({
 
   return (
     <div className="flex gap-1 mt-2">
-      {aggregatedTicks.map((isUp, index) => (
+      {aggregatedTicks.map((status, index) => (
         <div
           key={index}
-          className={`w-8 h-2 rounded ${isUp ? "bg-green-500" : "bg-red-500"}`}
-          title={`Window ${index + 1}: ${isUp ? "Up" : "Down"}`}
+          className={`w-8 h-2 rounded ${
+            status === "up"
+              ? "bg-green-500"
+              : status === "down"
+              ? "bg-red-500"
+              : "bg-gray-500"
+          }`}
+          title={`Window ${index + 1}: ${status.toUpperCase()}`}
         />
       ))}
     </div>
@@ -65,9 +77,10 @@ function WebsiteCard({
   website: {
     id: string;
     url: string;
+    userId: string; //added userId
     ticks?: {
       id: string;
-      createdAt: string;
+      createAt: string;
       status: string;
       latency: number;
     }[];
@@ -75,10 +88,15 @@ function WebsiteCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
 
+  console.log("website: ", website);
+
   const status =
     website.ticks && website.ticks.length > 0
       ? website.ticks[0].status
       : "unknown";
+
+  // const status = if ( website.ticks && website.ticks.length > 0 ) website.ticks[0].status
+
   const uptime = useMemo(() => {
     if (!website.ticks || website.ticks.length === 0) return "0%";
     const upTicks = website.ticks.filter((tick) => tick.status === "up").length;
@@ -97,15 +115,15 @@ function WebsiteCard({
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {website.url}
             </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            {/* <p className="text-sm text-gray-500 dark:text-gray-400">
               Last check:{" "}
-              {website.ticks && website.ticks.length > 0
+              {website.ticks && website.ticks?.length > 0
                 ? format(
                     parseISO(website.ticks[0].createdAt),
                     "MMM d, HH:mm:ss",
                   )
                 : "No data"}
-            </p>
+            </p> */}
           </div>
         </div>
         <div className="flex items-center space-x-4">
@@ -147,6 +165,8 @@ function App() {
   const { websites, refreshWebsites } = useWebsites();
   const [url, setUrl] = useState("");
   const { getToken } = useAuth();
+
+  console.log("websites: ", websites);
 
   // Remove console.log for production
   React.useEffect(() => {
