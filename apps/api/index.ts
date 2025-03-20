@@ -8,8 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-app.get("/", (req, res) => {
+app.get("/", async (req, res) => {
   res.send("Hello World!");
+  return;
 });
 
 app.post("/api/v1/website", authMiddleware, async (req, res) => {
@@ -29,6 +30,7 @@ app.post("/api/v1/website", authMiddleware, async (req, res) => {
   res.json({
     id: data.id,
   });
+  return;
 });
 
 app.get("/api/v1/website/status", authMiddleware, async (req, res) => {
@@ -46,6 +48,7 @@ app.get("/api/v1/website/status", authMiddleware, async (req, res) => {
     },
   });
   res.json(data);
+  return;
 });
 
 app.get("/api/v1/website", authMiddleware, async (req, res) => {
@@ -59,6 +62,7 @@ app.get("/api/v1/website", authMiddleware, async (req, res) => {
   });
   // console.log(data);
   res.json(data);
+  return;
 });
 
 app.delete("/api/v1/website/", authMiddleware, async (req, res) => {
@@ -77,6 +81,7 @@ app.delete("/api/v1/website/", authMiddleware, async (req, res) => {
   res.json({
     message: "Website deleted successfully",
   });
+  return;
 });
 
 app.listen(8000);
